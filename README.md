@@ -3,21 +3,23 @@ This package illustrates how to deploy our code to create PMML models for sensor
 You can run the function getPMML(json_file) by handing over a JSON file containing "sensor", "label" and "classifier" information.
 
 Example:
-{"sensor" : ["devicemotion","deviceorientation"], "label" : "('walking', 'standing')", "classifier" : "rpart"}
+```javascript
+json_data={"sensor" : ["devicemotion","deviceorientation"], "label" : "('walking', 'standing')", "classifier" : "rpart"}
+```
 
 To install and run the package in OpenCPU, do the following:
 
 # Install in R
-{{
+```R
 library(devtools)
 install_github("teco-kit","jActivity2PMML")
 
 opencpu::opencpu$start()
 opencpu::opencpu$browse("/library/jActivity2PMML/www/example.html")
-}}
+```
 
 # Calling from your own web page to increase fontsize when walking
-{{
+```html
  	<script src="js/jactivity.js"></script>
 	<script src="js/devicemotion.js"></script>
 
@@ -34,12 +36,12 @@ opencpu::opencpu$browse("/library/jActivity2PMML/www/example.html")
 
 	</script>
 	
-}}
+```
 
 you need to adapt the first Argument of jactivity to the root to whereever
-{{
+```R
 opencpu::opencpu$browse("/library/jActivity2PMML/www/")
-}}
+```
 points to
 
 # Server installation
