@@ -12,10 +12,10 @@ To install and run the package in OpenCPU, do the following:
 # Install in R
 ```R
 library(devtools)
-install_github("teco-kit","jActivity2PMML")
+install_github("jActivity2PMML","riedel")
 
-opencpu::opencpu$start()
-opencpu::opencpu$browse("/library/jActivity2PMML/www/example.html")
+#TODO opencpu::opencpu$start()
+#TODO opencpu::opencpu$browse("/library/jActivity2PMML/www/example.html")
 ```
 
 # Calling from your own web page to increase fontsize when walking
