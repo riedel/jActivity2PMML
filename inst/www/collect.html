@@ -1,0 +1,241 @@
+<html>
+	<head>
+
+	<script src="bower_components/requirejs/require.js"></script>
+	<link rel="stylesheet" href="style.css">
+	</head>
+
+<br />
+
+<form>
+	<b>Record:</b><br>
+	<label class="switch">
+		<input type="checkbox" id="record">
+		<div class="slider round"></div>
+	</label>
+	<br />
+	
+	<b>Label:</b><br>
+	<select id="label"><br>
+		<option value="testing">Testing</option>
+		<option value="walking">Walking</option>
+		<option value="standing">Standing</option>
+		<option value="sitting">Sitting</option>
+	</select>
+	
+		
+	<b>Subject:</b><br>
+	<input type="text" id="subject"><br>
+</form>
+
+<br />
+
+<p id="debug">Not recording.</p>
+
+<div class="main">
+	<h2 id="header">(Timestamp, Label)</h2>
+	<table>
+		<tr>
+			<td>alpha (rotation)</td>
+			<td id="alpha"></td>
+		</tr>
+		<tr>
+			<td>beta (rotation)</td>
+			<td id="beta"></td>
+		</tr>
+		<tr>
+			<td>gamma (rotation)</td>
+			<td id="gamma"></td>
+		</tr>
+		<tr>
+			<td>x (acceleration)</td>
+			<td id="x"></td>
+		</tr>
+		<tr>
+			<td>y (acceleration)</td>
+			<td id="y"></td>
+		</tr>
+		<tr>
+			<td>z (acceleration)</td>
+			<td id="z"></td>
+		</tr>
+	</table>
+</div>
+
+
+<script>
+
+// Global variables to store current values.
+var c;
+
+function Values() {return {
+alpha : [],
+beta : [],
+gamma : [],
+acc_x : [],
+acc_y : [],
+acc_z : [],
+n: 0
+}
+};
+
+document.getElementById("subject").value=Math.floor((1 + Math.random()) * 0x10000).toString(16)
+
+c=new Values();
+
+// Measurement ID is the UNIX timestamp when recording is started.
+var measurement_label = "";
+
+// How many data points have been recorded/uploaded so far?
+var data_count = 0;
+
+// How many data points are uploaded per second?
+var UPLOAD_RATE = 20;
+
+// Global var for setInterval setting/clearing.
+var interval;
+var noWrite=function () {}
+var write=noWrite()
+var writePoint=function(){noWrite()}
+
+// Start upload function X times every second, but only if record switch is checked.
+function recordDataPoint() {
+	
+    if (document.getElementById('record').checked) {
+		writePoint();
+		
+    } else {
+		// Do nothing if record switch is off.
+    }
+}
+
+// Stop/Start uploading depending on switch.
+document.getElementById('record').onchange = function() {
+	if(this.checked) {
+		label = document.getElementById("label").value;
+		subject = document.getElementById("subject").value;
+		writePoint=function(){write()}
+		
+		if (label) {
+			measurement_label = Math.floor(Date.now() / 1000) + "";
+			document.getElementById("debug").innerHTML = "Recording... (" + data_count + ")";
+			window.clearInterval(interval);
+			interval = window.setInterval(recordDataPoint, 1000 / UPLOAD_RATE);
+		} else {
+			this.checked = false;
+			document.getElementById("debug").innerHTML = "Choose label first."
+		}
+		
+	} else {
+		window.clearInterval(interval);
+		document.getElementById("debug").innerHTML = "Not recording."
+		data_count = 0;
+		
+		document.getElementById("header").innerHTML = "(Timestamp, Label)";
+		document.getElementById("alpha").innerHTML = "";
+		document.getElementById("beta").innerHTML = "";
+		document.getElementById("gamma").innerHTML = "";
+		document.getElementById("x").innerHTML = "";
+		document.getElementById("y").innerHTML = "";
+		document.getElementById("z").innerHTML = "";
+	}
+}
+
+if (window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', function(rotation) {
+		// Read and store all acceleration and rotation values.
+		
+		c.alpha.push(rotation.alpha);
+		c.beta.push(rotation.beta);
+		c.gamma.push(rotation.gamma);
+	//	c.acc_x.push(acceleration.x);
+	//	c.acc_y.push(acceleration.y);
+	//	c.acc_z.push(acceleration.z);
+	  	c.n++;
+	}, false);
+} else {
+  document.getElementById("debug").innerHTML = "Not supported."
+}
+
+require(["bower_components/influent/dist/influent"], function (influent) {
+// Function to write a single datapoint to the database.
+	influent
+		.createHttpClient({
+			server: [
+				{
+					protocol: "http",
+					host:     "css18.teco.edu",
+					port: 8086 
+				}
+			],
+			username: "css18",
+			password: "css18",
+			
+			database: "css18"
+		})
+		.then(function(client) {
+			write=function()
+			{
+				if(c.n>0)
+				{
+				data_count++;
+
+
+				label = document.getElementById("label").value;
+				subject = document.getElementById("subject").value;
+
+				// Set debug fields.
+				document.getElementById("header").innerHTML = "(" + measurement_label + ", " + label + ")";
+				document.getElementById("alpha").innerHTML = c.alpha;
+				document.getElementById("beta").innerHTML = c.beta;
+				document.getElementById("gamma").innerHTML = c.gamma;
+				document.getElementById("x").innerHTML = c.acc_x;
+				document.getElementById("y").innerHTML = c.acc_y;
+				document.getElementById("z").innerHTML = c.acc_z;
+
+				var c0=c;
+				c=new Values();
+				client.write({
+						key: "orientation",
+						tags: {
+							label: label,
+							subject: subject
+						},
+						fields: {
+							count: data_count,
+							gamma: mean(c0.gamma),
+							beta: mean(c0.beta),
+							alpha: mean(c0.alpha),
+						},
+						timestamp: (Date.now() * 1000000)
+					})
+					.then(function() {
+						document.getElementById("debug").innerHTML = "Recorded... (" + data_count + ")";
+					});
+			}
+				}
+			})
+})
+
+function mean(values) {
+	var sum = values.reduce(function(a, b) { return a + b; });
+	return Math.floor(sum * 1000 / values.length);
+}
+
+</script>
+
+</html>
+<head>
+	<script>
+		var influx;
+requirejs(["bower_components/influent/dist/influent"],function(influent)
+	{
+		influx=influent;
+	}
+)
+	</script>
+</head>
+<body>
+	test7
+</body>
+</html>

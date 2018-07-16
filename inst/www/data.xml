@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<PMML version="4.3" xmlns="http://www.dmg.org/PMML-4_3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.dmg.org/PMML-4_3 http://www.dmg.org/pmml/v4-3/pmml-4-3.xsd">
+ <Header copyright="Copyright (c) 2018 opencpu" description="RPart Decision Tree Model">
+  <Extension name="user" value="opencpu" extender="Rattle/PMML"/>
+  <Application name="Rattle/PMML" version="1.4"/>
+  <Timestamp>2018-07-16 18:23:01</Timestamp>
+ </Header>
+ <DataDictionary numberOfFields="7">
+  <DataField name=".outcome" optype="categorical" dataType="string">
+   <Value value="sitting"/>
+   <Value value="walking"/>
+  </DataField>
+  <DataField name="alpha" optype="continuous" dataType="double"/>
+  <DataField name="beta" optype="continuous" dataType="double"/>
+  <DataField name="gamma" optype="continuous" dataType="double"/>
+  <DataField name="mean" optype="continuous" dataType="double"/>
+  <DataField name="sd" optype="continuous" dataType="double"/>
+  <DataField name="max" optype="continuous" dataType="double"/>
+ </DataDictionary>
+ <TreeModel modelName="RPart_Model" functionName="classification" algorithmName="rpart" splitCharacteristic="binarySplit" missingValueStrategy="defaultChild" noTrueChildStrategy="returnLastPrediction">
+  <MiningSchema>
+   <MiningField name=".outcome" usageType="predicted" invalidValueTreatment="returnInvalid"/>
+   <MiningField name="alpha" usageType="active" invalidValueTreatment="returnInvalid"/>
+   <MiningField name="beta" usageType="active" invalidValueTreatment="returnInvalid"/>
+   <MiningField name="gamma" usageType="active" invalidValueTreatment="returnInvalid"/>
+   <MiningField name="mean" usageType="active" invalidValueTreatment="returnInvalid"/>
+   <MiningField name="sd" usageType="active" invalidValueTreatment="returnInvalid"/>
+   <MiningField name="max" usageType="active" invalidValueTreatment="returnInvalid"/>
+  </MiningSchema>
+  <Output>
+   <OutputField name="Predicted_.outcome" optype="categorical" dataType="string" feature="predictedValue"/>
+   <OutputField name="Probability_sitting" optype="continuous" dataType="double" feature="probability" value="sitting"/>
+   <OutputField name="Probability_walking" optype="continuous" dataType="double" feature="probability" value="walking"/>
+  </Output>
+  <Node id="1" score="sitting" recordCount="1413" defaultChild="2">
+   <True/>
+   <ScoreDistribution value="sitting" recordCount="1365" confidence="0.966029723991507"/>
+   <ScoreDistribution value="walking" recordCount="48" confidence="0.0339702760084926"/>
+   <Node id="2" score="sitting" recordCount="1393">
+    <SimplePredicate field="beta" operator="greaterOrEqual" value="-60620.91"/>
+    <ScoreDistribution value="sitting" recordCount="1365" confidence="0.979899497487437"/>
+    <ScoreDistribution value="walking" recordCount="28" confidence="0.0201005025125628"/>
+   </Node>
+   <Node id="3" score="walking" recordCount="20">
+    <SimplePredicate field="beta" operator="lessThan" value="-60620.91"/>
+    <ScoreDistribution value="sitting" recordCount="0" confidence="0"/>
+    <ScoreDistribution value="walking" recordCount="20" confidence="1"/>
+   </Node>
+  </Node>
+ </TreeModel>
+</PMML>

@@ -68,6 +68,7 @@ class jActivity {
 						 for (var feature in scope.dataset) {
 
 							 averageData[feature] = scope.dataset[feature].reduce(function(a, b) { return a + b }, 0) / scope.dataset[feature].length
+							 
 							 scope.dataset[feature] = [] //clear this
 						 }
 

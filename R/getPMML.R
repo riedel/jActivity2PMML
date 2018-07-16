@@ -1,63 +1,43 @@
-getSensorsSQL <- function(sensors, classes, host='jactivity', port=3306, dbname='jactivity2')
+saveModel <- function(sensor="orientation", classes=c("walking","sitting"), method="rpart")
 {
-  library(RMySQL)
-  # establish a connection to the database
-  mydb = dbConnect(MySQL(), user='admin', password='admin', dbname=dbname, host=host, port=port )
-  #for bug fixing or testing issues use port 3307 and your own host
+  library(influxdbr2)
+  library(xts)
+  influx<-influx_connection(host = "css18.teco.edu",
+                            port = 8086,
+                            user = "css18",
+                            pass = "css18")
 
-    
-  predictionClassDB = paste("(", 
-                            paste('"',classes,'"',collapse=',',sep=''),
-                            ")",sep="")
-  ids=c("id","timestamp","useragent","label")
-  # join/merge sensors into one dataframe on ids
-  joinhelper<-function(x,y) {plyr::join(x, y, by = ids, type = "full", match = "first")}
+  labels = lapply(classes,FUN=function(y) { paste("\"label\"='",y,"'",sep="") });
+  query=paste("select * FROM",sensor,"WHERE",paste(labels,collapse=" OR "),"GROUP BY subject,label",sep=" " )
   
-  
-  library(foreach)
-  res=foreach(s=sensors,.combine="joinhelper")%do%
+  result=influx_query_xts(influx,db="css18", query=query)
+
+  library(foreach)  
+  data=foreach(i=seq(1,length(result)),.combine=rbind) %do%
   {
-    query = paste("select * from ",s," where label in ",predictionClassDB,sep="")
-    
-    v<-dbGetQuery(mydb, query)
-    
-    # if we want to make them unique and expose the sensor names: names(v)[0:-4]<- gsub("^", paste(s,".",sep="") , names(v)[0:-4])
-    
-    v
-    
+    ts=result[[i]]
+    r={}
+    r$label=ts$tags$label
+    r$subject=ts$tags$subject
+    foreach(w=split.xts(ts$values,f="seconds",k=1),.combine = rbind) %do%
+    {
+      r$alpha=mean(w$alpha)
+      r$beta=mean(w$beta)
+      r$gamma=mean(w$gamma)
+      d3=sqrt((w$alpha-r$alpha)^2+(w$beta-r$beta)^2+(w$gamma-r$gamma)^2)
+      r$mean=mean(d3)
+      r$sd=sd(d3)
+      r$max=max(d3)
+      as.data.frame(r)
+    }
   }
-  
-  # remove ids
-  res <-subset(res,select=-c(timestamp,id,useragent))
-  
-  # label to factor  
-  res$label <- as.factor(tolower(res$label))
-  
-  # the rest to numeric
-  res[,-grep("label", colnames(res))] <- sapply(res[,-grep("label", colnames(res))], as.numeric)
- 
-  dbDisconnect(mydb) 
-  return(res)
+  library(caret)
+  data=na.omit(data)
+  method="rpart"
+  pmodel=train(subset(data,select=-c(label,subject)), data[,"label"], method = method)
+  library(pmml)
+  p=pmml(model=pmodel$finalModel)
+  savePMML(p,name=paste("inst/www/models/",paste(method,sensor,paste(classes,collapse = "_"),sep="_"),".pmml",sep=""))
+  install()
 }
-
-getModel <- function(classifier,sensorvalues)
-{
-  fit <- switch(classifier,
-     rpart=rpart::rpart(label ~ ., data=sensorvalues,maxsurrogate=0) # no surrogates as it is easier to be handled, esp. if we want to reuse the code for randomForests
-    ,randomForest=randomForest::randomForest(label ~ ., data=sensorvalues,na.action=randomForest::na.roughfix)
-    ,naiveBayes=e1071::naiveBayes(label ~ ., data=sensorvalues)
-    ,warning("classifier not supported yet")
-    )
-}
-
-getPMML <- function(json_data=jsonlite::fromJSON('{"sensor": ["devicemotion","touchevents"],"label": ["walking", "standing"],"classifier": "rpart"}')){
-  
-  #get sensordata from server for labels
-  sensorvalues <- getSensorsSQL(json_data$sensor, json_data$label)
-  
-
-  #learn model
-  fit=getModel(json_data$classifier, sensorvalues)
- 
-  invisible(XML::saveXML(pmml::pmml(fit)))
-}
+saveModel()
