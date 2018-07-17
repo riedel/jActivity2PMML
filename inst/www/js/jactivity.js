@@ -63,16 +63,23 @@ class jActivity {
 					function(scope) {
 						 // calculate features
 						 // TODO: currently only average!!!
-						 let averageData = {}
+						 let features = {}
 
 						 for (var feature in scope.dataset) {
-
-							 averageData[feature] = scope.dataset[feature].reduce(function(a, b) { return a + b }, 0) / scope.dataset[feature].length
+							 features["mean"+feature] = scope.dataset[feature].reduce(function(a, b) { return a + b }, 0) / scope.dataset[feature].length
 							 
-							 scope.dataset[feature] = [] //clear this
 						 }
+						 
+             
+						 for (var sensor in scope.sensors) {
+						  sf=sensor.features()
+						  for (var feature in sf)
+						  {
+						    features[feature]=sf[feature]
+						  }
 
-						 scope.callback(scope.classifier.evaluate(averageData))
+						 scope.callback(scope.classifier.evaluate(features))
+						 sensor.flush()
 					 }
 					 , interval,this)
 			}

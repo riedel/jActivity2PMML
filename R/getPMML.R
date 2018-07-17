@@ -21,10 +21,7 @@ saveModel <- function(sensor="orientation", classes=c("walking","sitting"), meth
     r$subject=ts$tags$subject
     foreach(w=split.xts(ts$values,f="seconds",k=1),.combine = rbind) %do%
     {
-      r$alpha=mean(w$alpha)
-      r$beta=mean(w$beta)
-      r$gamma=mean(w$gamma)
-      d3=sqrt((w$alpha-r$alpha)^2+(w$beta-r$beta)^2+(w$gamma-r$gamma)^2)
+      d3=sqrt((w$alpha-mean(w$alpha))^2+(w$beta-mean(w$beta))^2+(w$gamma-mean(w$gamma))^2)
       r$mean=mean(d3)
       r$sd=sd(d3)
       r$max=max(d3)
@@ -33,8 +30,13 @@ saveModel <- function(sensor="orientation", classes=c("walking","sitting"), meth
   }
   library(caret)
   data=na.omit(data)
-  method="rpart"
-  pmodel=train(subset(data,select=-c(label,subject)), data[,"label"], method = method)
+  ctrl <- trainControl(method = "repeatedcv", repeats = 5,
+                       classProbs = TRUE,
+                       summaryFunction = twoClassSummary,
+                       ## new option here:
+                       sampling = "down")
+  
+  pmodel=train(subset(data,select=-c(label,subject)), data[,"label"], method = method, metric = "ROC", trControl = ctrl)
   library(pmml)
   p=pmml(model=pmodel$finalModel)
   savePMML(p,name=paste("inst/www/models/",paste(method,sensor,paste(classes,collapse = "_"),sep="_"),".pmml",sep=""))

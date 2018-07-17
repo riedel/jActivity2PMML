@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xpath-default-namespace="http://www.dmg.org/PMML-4_2" xmlns:pmml="http://www.dmg.org/PMML-4_2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.dmg.org/PMML-4_2 http://www.dmg.org/v4-2/pmml-4-2.xsd">
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xpath-default-namespace="http://www.dmg.org/PMML-4_3" xmlns:pmml="http://www.dmg.org/PMML-4_3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.dmg.org/PMML-4_3 http://www.dmg.org/v4-3/pmml-4-3.xsd">
 	<xsl:output method="html"/>
-	    <xsl:variable name="vAllowedSymbols"
-        select="'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_012345678'"/>
+	    <xsl:variable name="vAllowedSymbols" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_012345678'"/>
 
 	<xsl:template match="/pmml:PMML">
 		/**PMML**/ 
@@ -35,12 +34,24 @@
 		<xsl:apply-templates select="pmml:Node"/>
 	</xsl:template>
 
+	<xsl:template match="pmml:CompoundPredicate">
+		<xsl:choose>
+			<xsl:when test="@booleanOperator = 'surrogate'">
+				/*surrogate not implemented using first*/
+			<xsl:apply-templates select="pmml:SimplePredicate[1]"/>
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:message>BooleanOperators not supported yet</xsl:message>
+		</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
 	<xsl:template match="pmml:Node">
 		<xsl:if test="position() != last()">
 			Array(
 		</xsl:if>
 		new Case /*<xsl:value-of select="@id"/>*/(
-			<xsl:apply-templates select="pmml:True|pmml:SimplePredicate"/>,
+			<xsl:apply-templates select="pmml:True|pmml:SimplePredicate|pmml:CompoundPredicate"/>,
 			<xsl:choose>
 			<xsl:when test="pmml:Node">
 				<xsl:apply-templates select="pmml:Node"/>
