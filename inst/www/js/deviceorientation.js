@@ -6,18 +6,24 @@ class devicemotion {
 	}
 
 	devicemotionListener(event) {
-		(this.dataset.orientation = this.dataset.orientation || []).push(event.orientation);
+		(this.dataset.orientation = this.dataset.orientation || []).push(event);
 	}
 	
 	features()
 	{
-	  f={}
-	  o=this.dataset.orientation
-	  d3=o.map(x=>sqrt((x.alpha-math.mean(o.alpha))**2+(x.beta-math.mean(o.beta))**2+(x.gamma-math.mean(o.gamma))**2))
+	  var f={}
+	  if((this.dataset.orientation = this.dataset.orientation || []).length>0)
+	 {
+	  var o=this.dataset.orientation
+	  var alpha=o.map(x=>x.alpha)
+	  var beta=o.map(x=>x.beta)
+	  var gamma=o.map(x=>x.gamma)
+	  var d3=o.map(x=>Math.sqrt((x.alpha-math.mean(alpha))**2+(x.beta-math.mean(beta))**2+(x.gamma-math.mean(gamma))**2))
 	  
-	  f["mean"]=math.mean[d3];
-	  f["max"]=math.max[d3];
-	  f["sd"]=math.std[d3];
+	  f["mean"]=math.mean(d3);
+	  f["max"]=math.max(d3);
+	  f["sd"]=math.std(d3);
+	 }
 	  
 	  return f;
 	}

@@ -4,7 +4,6 @@ class jActivity {
 		this.label = label
 		this.interval = interval
 		this.base = base
-
 		var dataset = {}
 		this.dataset = dataset; 
 
@@ -15,7 +14,7 @@ class jActivity {
 		sensorClasses.forEach(function (sensorClass)
 		{
 			var sensor= new sensorClass(dataset);
-			sensors.push(sensorClass.name)
+			sensors.push(sensor)
 		}
 		)
 		
@@ -32,7 +31,7 @@ class jActivity {
 			}
 			$.ajax({
 				type: "GET",
-				url: (this.base + "www/js/pmml2js.xsl"),
+				url: (this.base + "js/pmml2js.xsl"),
 				success: onSuccess
 			})
 		})
@@ -41,9 +40,21 @@ class jActivity {
 		var pmml = new Promise((resolve,reject) => {
 
 			var onSuccess = function(data) {
-				resolve($.parseXML(data.pop()))
+				pmml=$.parseXML(data)
+				resolve(pmml)
+			}
+			var onError = function(jqXHR,textStatus,errorThrown ) {
+				alert(textStatus)
+				resolve(null)
 			}
 
+			$.ajax({
+				type: "GET",
+				url: (this.base + "models/rpart_orientation_walking_sitting.pmml"),
+				success: onSuccess,
+				error: onError,
+			})
+/*
 			$.ajax({
 				type: "POST",
 				url: (this.base + "R/getPMML/json"),
@@ -51,6 +62,7 @@ class jActivity {
 				success: onSuccess,
 				dataType: "json"
 			})
+			*/
 		}
 		)
 
@@ -65,21 +77,16 @@ class jActivity {
 						 // TODO: currently only average!!!
 						 let features = {}
 
-						 for (var feature in scope.dataset) {
-							 features["mean"+feature] = scope.dataset[feature].reduce(function(a, b) { return a + b }, 0) / scope.dataset[feature].length
-							 
-						 }
-						 
-             
 						 for (var sensor in scope.sensors) {
-						  sf=sensor.features()
+						  var sf=sensors[sensor].features()
 						  for (var feature in sf)
 						  {
 						    features[feature]=sf[feature]
 						  }
+						 }
 
 						 scope.callback(scope.classifier.evaluate(features))
-						 sensor.flush()
+						 sensor[sensors].flush()
 					 }
 					 , interval,this)
 			}
